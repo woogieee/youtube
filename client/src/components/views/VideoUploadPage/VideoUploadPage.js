@@ -52,7 +52,7 @@ function VideoUploadPage(props) {
 
     //파일 업로드
     const onDrop = (files) => {
-        let formData = new FormData;
+        let formData = new FormData();
         const config = {
             header: {'content-type': 'multipart/form-data'}
         }

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Video } = require("../models/Video");
-
+const { Subscriber } = require("../models/Subscriber");
 const { auth } = require("../middleware/auth");
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
@@ -33,9 +33,9 @@ const upload = multer({ storage: storage }).single("file");
 //             Video
 //=================================
 
+// 비디오를 서버에 저장
 router.post('/uploadfiles', (req, res) => {
 
-    // 비디오를 서버에 저장
     upload(req, res, err => {
         if(err) {
             return res.json({ success: false, err})
@@ -44,23 +44,22 @@ router.post('/uploadfiles', (req, res) => {
     })
 })
 
+// 비디오 정보들을 DB에 저장
 router.post('/uploadVideo', (req, res) => {
 
-    // 비디오 정보들을 DB에 저장
     const video = new Video(req.body)
     //VideoUploadPage.js에 variables에 있는 정보가 다 담김
 
     video.save((err, doc) => {
         //모든 정보들을 몽고DB에 저장
-        if(err) return res.json({ success: false, err })
+        if(err) return res.json({ success: false, err });
         res.status(200).json({success: true })
     })
 
 })
 
+//비디오를 DB에서 가져와서 클라이언트에 보낸다.
 router.get('/getVideos', (req, res) => {
-
-    //비디오를 DB에서 가져와서 클라이언트에 보낸다.
 
     Video.find()
     //Video 컬렉션 안에있는 모든 Video를 가져옴
@@ -73,9 +72,8 @@ router.get('/getVideos', (req, res) => {
 
 })
 
+// 썸네일 생성하고 비디오 러닝타임도 가져오기
 router.post('/thumbnail', (req, res) => {
-    
-    // 썸네일 생성하고 비디오 러닝타임도 가져오기
     
     let filePath = "";
     let fileDuration = "";
@@ -116,6 +114,48 @@ router.post('/thumbnail', (req, res) => {
         filename: 'thumbnail-%b.png'
     })
 })
+
+// 비디오 상세페이지로 이동
+router.post('/getVideoDetail', (req, res) => {
+
+    //Video model을 이용해서 클라이언트에서 보낸 ID를 이용해서 비디오를 찾음
+    Video.findOne({ "_id" : req.body.videoId })
+        .populate('writer')
+        .exec((err, videoDetail) => {
+            if(err) return res.status(400).send(err);
+            return res.status(200).json({ success: true, videoDetail })
+        })
+})
+
+// 구독한 비디오 가져오기
+router.post('/getSubscriptionVideos', (req, res) => {
+
+    // 자신의 ID를 가지고 구독하는 사람들을 찾는다.
+    Subscriber.find({ userFrom: req.body.userFrom })
+    .exec(( err, subscriberInfo ) => {
+        if(err) return res.status(400).send(err);
+
+        let subscribedUser = [];
+
+        //subscribedUser에 userTo정보를 다 넣어줌
+        subscriberInfo.map((subscriber, i) => {
+            subscribedUser.push(subscriber.userTo);
+        })
+
+        // 찾은 사람들의 비디오를 가지고 온다.
+        Video.find({ writer: { $in: subscribedUser }})
+        //$in 몽고DB기능 - 구독하는 유저의 모든 아이디를 가져옴
+            .populate('writer')
+            .exec((err, videos) => {
+                if(err) return res.status(400).send(err);
+                res.status(200).json({ success: true, videos })
+            })
+    })
+
+
+
+})
+
 
 
 module.exports = router;
