@@ -32,7 +32,7 @@ function Subscribe(props) {
             }
         })
 
-    })
+    }, [])
 
     const onSubscribe = () => {
 

@@ -25,5 +25,17 @@ router.post('/saveComment', (req, res) => {
 
 })
 
+//비디오 댓글정보 가져오기
+router.post('/getComments', (req, res) => {
+
+    Comment.find({ "postId" : req.body.videoId})
+    .populate('writer')
+    .exec(( err, comments) => {
+        if(err) return res.status(400).send(err)
+        res.status(200).json({ success: true, comments })
+    })
+
+})
+
 
 module.exports = router;

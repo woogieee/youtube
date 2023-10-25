@@ -1,6 +1,12 @@
 import Axios from 'axios'
 import React, { useState } from 'react'
+import { Button, Input } from 'antd';
 import { useSelector } from 'react-redux'
+import SingleComment from './SingleComment';
+import ReplyComment from './ReplyComment';
+
+const { TextArea } = Input;
+
 
 function Comment(props) {
 
@@ -9,7 +15,7 @@ function Comment(props) {
     //리덕스 훅으로 유저정보 가져오기
     const user = useSelector(state => state.user);
 
-    const [commentValue, setCommentValue] = useState("")
+    const [CommentValue, setCommentValue] = useState("")
 
     //타이핑 이벤트
     const handleClick = (event) => {
@@ -22,7 +28,7 @@ function Comment(props) {
         //페이지 새로고침 X
 
         const variables = {
-            content: commentValue,
+            content: CommentValue,
             writer: user.userData._id,
             //리덕스훅 에서 유저정보 가져오기
             postId: videoId
@@ -32,6 +38,8 @@ function Comment(props) {
             .then(response => {
                 if(response.data.success) {
                     console.log(response.data.result)
+                    setCommentValue("")
+                    props.refreshFunction(response.data.result)
                 } else {
                     alert('코멘트를 저장하지 못했습니다.')
                 }
@@ -47,17 +55,26 @@ function Comment(props) {
 
         {/* Comment Lists */}
 
+        {props.commentLists && props.commentLists.map((comment, index) => (
+            (!comment.responseTo &&
+                <React.Fragment>
+                    <SingleComment refreshFunction={props.refreshFunction} comment={comment} postId={videoId} />
+                    <ReplyComment refreshFunction={props.refreshFunction} parentCommentId={comment._id} postId={videoId} commentLists={props.commentLists}/>
+                </React.Fragment>
+            )
+        ))}
+
         {/* Root Comment Form */}
 
         <form style={{ display: 'flex' }} onSubmit={onSubmit} >
-            <textarea 
+            <TextArea 
                 style={{ width: '100%', borderRadius: '5px' }}
                 onChange={handleClick}
-                value={commentValue}
+                value={CommentValue}
                 placeholder="코멘트를 작성해 주세요"
             />
             <br />
-            <button style={{ width: '20%', height: '52px' }} onClick={onSubmit} >Submit</button>
+            <Button style={{ width: '20%', height: '52px' }} onClick={onSubmit} >Submit</Button>
 
         </form>
     </div>
